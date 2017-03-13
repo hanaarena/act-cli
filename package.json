@@ -1,0 +1,24 @@
+{
+  "name": "act-cli",
+  "version": "0.0.1",
+  "author": "lanz",
+  "description": "activity single page workflow auto generater",
+  "main": "bin/act",
+  "bin": {
+    "act": "./bin/act"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.18.8",
+    "commander": "^2.9.0",
+    "mkdirp": "^0.5.1",
+    "ncp": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hanaarena/act-cli.git"
+  },
+  "license": "ISC"
+}

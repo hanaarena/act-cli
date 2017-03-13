@@ -1,0 +1,117 @@
+#!/usr/bin/env node
+
+'use strict';
+const program = require('commander');
+const fs = require('fs');
+const readline = require('readline');
+const mkdirp = require('mkdirp');
+const ncp = require('ncp').ncp;
+const path = require('path');
+
+const pkg = require('../package.json');
+
+function exit(code) {
+  let draining = 0;
+  function done () {
+    if (!(draining--)) process.exit(code);
+  }
+
+  const streams = [process.stdout, process.stderr];
+
+  exit.exited = true;
+
+  streams.forEach((stream) => {
+    draining += 1;
+    stream.write('', done);
+  });
+
+  done();
+}
+
+function emptyDirectory(path, cb) {
+  fs.readdir(path, (err, files) => {
+    if (err && 'ENOENT' != err.code) {
+      throw err;
+    }
+
+    cb(!files || !files.length);
+  });
+}
+
+function confirm(cb) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  rl.question('Folder already exited,do you want to initial in it? [yes/no]', answer => {
+    rl.close();
+    cb && cb(/y|yes/i.test(answer));
+  });
+}
+
+function modifyPackage(name) {
+  const destPath = path.join(process.cwd(), name, 'package.json');
+  const pkg = fs.readFileSync(destPath, 'utf8');
+  const result = JSON.parse(pkg);
+  result.name = name;
+  fs.writeFileSync(destPath, JSON.stringify(result, null, 2));
+}
+
+function create(name) {
+  mkdirp(name, '0755', error => {
+    if (error) {
+      throw error;
+    }
+
+    ncp(path.join(__dirname, '../template'), name, function (err) {
+     if (err) {
+       throw err;
+     }
+     console.log();
+     console.log('  Project already generated!');
+     console.log();
+     console.log('  > cd ' + name);
+     console.log('  > npm i');
+     console.log();
+     console.log('  then you can run');
+     console.log();
+     console.log('  > npm start');
+     console.log();
+     console.log('  to start develop');
+     console.log();
+
+     modifyPackage(name);
+    });
+  });
+}
+
+process.exit = exit;
+
+if (!exit.exited) {
+  program
+    .version(pkg.version);
+
+  program
+    .command('init [name]')
+    .description('initial activity folder')
+    // TODO: support more framework custom option
+    .action(function(name){
+      emptyDirectory(name, empty => {
+        if (empty) {
+          create(name);
+        } else {
+          confirm(accept => {
+            if (accept) {
+              process.stdin.destroy();
+              create(name);
+            } else {
+              exit(1);
+            }
+          });
+        }
+      });
+    });
+
+  program.parse(process.argv);
+}
